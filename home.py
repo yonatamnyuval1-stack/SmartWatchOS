@@ -1,5 +1,6 @@
 import tkinter as tk
 from datetime import datetime
+import ai
 WIDTH = 240
 HEIGHT = 280
 HEADER_H = 50
@@ -22,6 +23,7 @@ pages = [
     ],
     [None,None,None,None,None,None,None,None,None],
 ]
+where = "home"
 page = 0
 picked = ""
 boxes = []
@@ -84,6 +86,9 @@ def redraw():
     global boxes
     boxes = []
     screen.delete("all")
+    if where == "ai":
+        boxes = ai.show_screen(screen)
+        return
     now = datetime.now().strftime("%H:%M")
     screen.create_text(14, 24, text=now, anchor="w", font=("Segoe UI", 18), fill="#f2f2f2")
     screen.create_text(WIDTH - 36,24, text="31°", anchor="e", font=("Segoe UI", 14), fill="#c8c2b4")
@@ -101,9 +106,14 @@ def redraw():
     draw_arrow()
     if picked:
         screen.create_text(12, HEIGHT - PAGER_H // 2, text=picked, anchor="w", font=("Segoe UI", 10), fill="#f2f2f2")
-
+    
 def on_click(event):
-    global page,picked
+    global page,picked, where
+    if where == "ai":
+        if event.y >= HEIGHT-PAGER_H:
+            where = "home"
+            redraw()
+        return
     if event.y >= HEIGHT-PAGER_H:
         page = 1 - page
         picked = ""
@@ -111,6 +121,11 @@ def on_click(event):
         return
     for x1,y1,x2,y2,name in boxes:
         if x1 <= event.x <= x2 and y1 <= event.y <= y2:
+            if name == "AI":
+                where = "ai"
+                picked = ""
+                redraw()
+                return
             picked = name
             redraw()
             return 
