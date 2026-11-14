@@ -2,6 +2,7 @@ import tkinter as tk
 from datetime import datetime
 import ai
 import ask
+import deepl
 WIDTH = 240
 HEIGHT = 280
 HEADER_H = 50
@@ -37,7 +38,7 @@ picked_model = ""
 answer = ""
 waiting = False
 line= tk.Entry(
-    root, bg ="#111111", fg="#f2f2f2", insertbackground="#f2f2f2",
+    root, bg="#333333", fg="#f2f2f2", insertbackground="#f2f2f2",
     relief="solid", font=("Segoe UI", 11))
 
 def draw_icon(kind,x,y):
@@ -108,9 +109,9 @@ def redraw():
     global boxes
     boxes = []
     screen.delete("all")
-    if where != "ask":
+    if where != "ask" and where != "deepl":
         line.place_forget()
-    if where == "ask":
+    if where == "ask" or where == "deepl":
         draw_ask()
         return
     if where == "ai":
@@ -136,7 +137,7 @@ def redraw():
 def send_line(event=None):
     global answer, waiting
     text = line.get().strip()
-    if text == "" or waiting or picked_model == "":
+    if text == "" or waiting:
         return
     answer = ""
     waiting = True
@@ -147,8 +148,11 @@ def send_line(event=None):
             answer = reply
             waiting = False
             redraw()
-        root.after(0,paint)
-    ask.ask_later(picked_model, text, done)
+        root.after(0, paint)
+    if where == "deepl":
+        deepl.translate_later(text, done)
+    else:
+        ask.ask_later(picked_model, text, done)
 line.bind("<Return>", send_line)
 
 def on_click(event):
@@ -158,7 +162,7 @@ def on_click(event):
             where = "home"
             redraw()
             return
-    if where != "ask" and event.y >= HEIGHT-PAGER_H:
+    if where != "ask" and where != "deepl" and event.y >= HEIGHT-PAGER_H:
         page = 1 - page
         picked = ""
         redraw()
@@ -169,6 +173,13 @@ def on_click(event):
             picked = ""
             redraw()
             return
+        if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name=="deepl":
+            answer = ""
+            waiting=False
+            line.delete(0,"end")
+            where="deepl"
+            redraw()
+            return
         if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name in ask.models:
             picked_model = ask.models[name]
             answer = ""
@@ -177,7 +188,7 @@ def on_click(event):
             where = "ask"
             redraw()
             return
-    if where == "ask":
+    if where == "ask" or where == "deepl":
         if event.y >= HEIGHT-PAGER_H:
             where="ai"
             redraw()

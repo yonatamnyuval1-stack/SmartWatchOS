@@ -5,7 +5,7 @@ WIDTH = 240
 HEIGHT = 280
 PAGER_H = 20
 GRID_LEFT = (WIDTH - (TILE*3 + GAP*2)) // 2
-items = ["hf", "openai", "gemini", "claude", "grok", "cursor", "ollama", "perplexity", "deepseek"]
+items = ["deepl", "openai", "gemini", "claude", "grok", "whisper", "elevenlabs", "perplexity", "deepseek"]
 logos = {}
 def load_logos():
     if logos:
