@@ -37,6 +37,10 @@ screen.pack()
 picked_model = ""
 answer = ""
 waiting = False
+picked_lang = ""
+picked_name = ""
+lang_list = []
+lang_page = 0
 line= tk.Entry(
     root, bg="#333333", fg="#f2f2f2", insertbackground="#f2f2f2",
     relief="solid", font=("Segoe UI", 11))
@@ -90,13 +94,39 @@ def draw_arrow():
             mid - 28, y+4, mid, y-4, mid+28, y+4,
             fill="#f2f2f2", width=2,joinstyle="miter",capstyle="butt"
         )
-
+def draw_langs():
+    global boxes
+    boxes = []
+    per = 6
+    start = lang_page * per
+    rows = lang_list[start:start + per]
+    if waiting:
+        screen.create_text(120,140,text="...",fill="#f2f2f2",font=("Segoe UI", 16))
+    elif len(rows) == 0:
+        screen.create_text(120,140,text="no internet",fill="#f2f2f2",font=("Segoe UI", 12))
+    i = 0
+    for lang in rows:
+        y = 8+i*40
+        screen.create_text(16,y+18,text=lang["name"], anchor="w", fill="#f2f2f2", font=("Segoe UI", 13))
+        boxes.append((0, y, WIDTH, y+40, lang["language"]))
+        i = i+1
+    screen.create_line(8, HEIGHT-PAGER_H, WIDTH-8, HEIGHT-PAGER_H, fill="#c8c2b4")
+    mid = WIDTH // 2
+    ay = HEIGHT - PAGER_H // 2
+    if waiting == False and start + per >= len(lang_list):
+        screen.create_line(mid-28,ay+4,mid,ay-4,mid+28,ay+4,fill="#f2f2f2",width=2, joinstyle="miter"),
+    else:
+        screen.create_line(mid-28,ay-4,mid,ay+4,mid+28,ay-4,fill="#f2f2f2",width=2,joinstyle="miter"),
 def draw_ask():
     line.place(x=12, y=16, width=216, height=26)
+    answer_y = 58
+    if where == "deepl":
+        screen.create_text(16,50, text=picked_name,anchor="w", fill="#c8c2b4", font=("Segoe UI",11))
+        answer_y=72
     if waiting:
         screen.create_text(120,140,text="...",fill="#f2f2f2",font=("Segoe UI", 16))
     elif answer:
-        screen.create_text(16,58, text=answer, anchor="nw", width=208, fill="#f2f2f2", font=("Segoe UI", 11))
+        screen.create_text(16,answer_y, text=answer, anchor="nw", width=208, fill="#f2f2f2", font=("Segoe UI", 11))
     screen.create_line(8, HEIGHT-PAGER_H, WIDTH-8, HEIGHT-PAGER_H, fill="#c8c2b4")
     mid = WIDTH // 2
     ay = HEIGHT - PAGER_H //2
@@ -109,6 +139,10 @@ def redraw():
     global boxes
     boxes = []
     screen.delete("all")
+    if where == "deepl" and picked_lang == "":
+        line.place_forget()
+        draw_langs()
+        return
     if where != "ask" and where != "deepl":
         line.place_forget()
     if where == "ask" or where == "deepl":
@@ -150,12 +184,13 @@ def send_line(event=None):
             redraw()
         root.after(0, paint)
     if where == "deepl":
-        deepl.translate_later(text, done)
+        deepl.translate_later(text, picked_lang, done)
     else:
         ask.ask_later(picked_model, text, done)
 line.bind("<Return>", send_line)
 
 def on_click(event):
+    global picked_lang, picked_name, lang_list, lang_page
     global page,picked, where, picked_model,answer,waiting
     if where == "ai":
         if event.y >= HEIGHT-PAGER_H:
@@ -173,12 +208,26 @@ def on_click(event):
             picked = ""
             redraw()
             return
-        if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name=="deepl":
-            answer = ""
-            waiting=False
+        if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name == "deepl":
+            answer=""
+            waiting=True
+            picked_lang=""
+            picked_name=""
+            lang_page=0
+            lang_list=[]
             line.delete(0,"end")
             where="deepl"
             redraw()
+            def done(langs):
+                def paint():
+                    global lang_list, waiting
+                    if where != "deepl":
+                        return
+                    lang_list = langs
+                    waiting=False
+                    redraw()
+                root.after(0,paint)
+            deepl.languages_later(done)
             return
         if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name in ask.models:
             picked_model = ask.models[name]
@@ -188,8 +237,33 @@ def on_click(event):
             where = "ask"
             redraw()
             return
+        if where == "deepl" and picked_lang == "" and x1 <= event.x <= x2 and y1 <= event.y <= y2:
+            picked_lang = name
+            picked_name = name
+            for lang in lang_list:
+                if lang["language"] == name:
+                    picked_name = lang["name"]
+            answer = ""
+            waiting = False
+            line.delete(0,"end")
+            redraw()
+            return
     if where == "ask" or where == "deepl":
         if event.y >= HEIGHT-PAGER_H:
+            if where == "deepl" and picked_lang != "":
+                picked_lang=""
+                picked_name=""
+                answer=""
+                line.delete(0,"end")
+                redraw()
+                return
+            if where == "deepl":
+                if (lang_page+1)*6 < len(lang_list):
+                    lang_page = lang_page+1
+                else:
+                    where="ai"
+                redraw()
+                return
             where="ai"
             redraw()
             return
