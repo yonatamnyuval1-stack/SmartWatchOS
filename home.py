@@ -3,6 +3,7 @@ from datetime import datetime
 import ai
 import ask
 import deepl
+import eleven
 WIDTH = 240
 HEIGHT = 280
 HEADER_H = 50
@@ -143,9 +144,9 @@ def redraw():
         line.place_forget()
         draw_langs()
         return
-    if where != "ask" and where != "deepl":
+    if where != "ask" and where != "deepl" and where != "talk":
         line.place_forget()
-    if where == "ask" or where == "deepl":
+    if where == "ask" or where == "deepl" or where == "talk":
         draw_ask()
         return
     if where == "ai":
@@ -185,6 +186,8 @@ def send_line(event=None):
         root.after(0, paint)
     if where == "deepl":
         deepl.translate_later(text, picked_lang, done)
+    elif where == "talk":
+        eleven.speak_later(text, done)
     else:
         ask.ask_later(picked_model, text, done)
 line.bind("<Return>", send_line)
@@ -197,7 +200,7 @@ def on_click(event):
             where = "home"
             redraw()
             return
-    if where != "ask" and where != "deepl" and event.y >= HEIGHT-PAGER_H:
+    if where != "ask" and where != "deepl" and where != "talk" and event.y >= HEIGHT-PAGER_H:
         page = 1 - page
         picked = ""
         redraw()
@@ -229,6 +232,13 @@ def on_click(event):
                 root.after(0,paint)
             deepl.languages_later(done)
             return
+        if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name == "elevenlabs":
+            answer = ""
+            waiting = False
+            line.delete(0,"end")
+            where="talk"
+            redraw()
+            return    
         if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name in ask.models:
             picked_model = ask.models[name]
             answer = ""
@@ -248,7 +258,7 @@ def on_click(event):
             line.delete(0,"end")
             redraw()
             return
-    if where == "ask" or where == "deepl":
+    if where == "ask" or where == "deepl" or where == "talk":
         if event.y >= HEIGHT-PAGER_H:
             if where == "deepl" and picked_lang != "":
                 picked_lang=""
