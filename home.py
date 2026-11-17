@@ -4,6 +4,7 @@ import ai
 import ask
 import deepl
 import eleven
+import whisper
 WIDTH = 240
 HEIGHT = 280
 HEADER_H = 50
@@ -136,17 +137,33 @@ def draw_ask():
         fill="#f2f2f2",width=2,joinstyle="miter",capstyle="butt"
     )
 
+def draw_hear():
+    if waiting:
+        screen.create_text(120,140,text="...",fill="#f2f2f2",font=("Segoe UI",16))
+    elif answer:
+        screen.create_text(16,24,text=answer, anchor="nw", width=208, fill="#f2f2f2",font=("Segoe UI",11))
+    screen.create_line(8, HEIGHT-PAGER_H,WIDTH-8,HEIGHT-PAGER_H,fill="#c8c2b4")
+    mid = WIDTH // 2
+    ay = HEIGHT - PAGER_H // 2
+    screen.create_line(
+        mid-28,ay-4,mid,ay+4,mid+28,ay-4,
+        fill="#f2f2f2",width=2,joinstyle="miter",capstyle="butt"
+    )
 def redraw():
     global boxes
     boxes = []
     screen.delete("all")
+    if where == "hear":
+        line.place_forget()
+        draw_hear()
+        return 
     if where == "deepl" and picked_lang == "":
         line.place_forget()
         draw_langs()
         return
-    if where != "ask" and where != "deepl" and where != "talk":
+    if where != "ask" and where != "deepl" and where != "talk" and where != "hear":
         line.place_forget()
-    if where == "ask" or where == "deepl" or where == "talk":
+    if where == "ask" or where == "deepl" or where == "talk" or where == "hear":
         draw_ask()
         return
     if where == "ai":
@@ -200,7 +217,7 @@ def on_click(event):
             where = "home"
             redraw()
             return
-    if where != "ask" and where != "deepl" and where != "talk" and event.y >= HEIGHT-PAGER_H:
+    if where != "ask" and where != "deepl" and where != "talk" and where != "hear" and event.y >= HEIGHT-PAGER_H:
         page = 1 - page
         picked = ""
         redraw()
@@ -239,6 +256,20 @@ def on_click(event):
             where="talk"
             redraw()
             return    
+        if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name == "whisper":
+            answer = ""
+            waiting = True
+            where = "hear"
+            redraw()
+            def done(text):
+                def paint():
+                    global answer,waiting
+                    answer = text
+                    waiting = False
+                    redraw()
+                root.after(0, paint)
+            whisper.listen_later(done)
+            return 
         if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name in ask.models:
             picked_model = ask.models[name]
             answer = ""
@@ -258,7 +289,7 @@ def on_click(event):
             line.delete(0,"end")
             redraw()
             return
-    if where == "ask" or where == "deepl" or where == "talk":
+    if where == "ask" or where == "deepl" or where == "talk" or where == "hear":
         if event.y >= HEIGHT-PAGER_H:
             if where == "deepl" and picked_lang != "":
                 picked_lang=""
