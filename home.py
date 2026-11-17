@@ -5,6 +5,7 @@ import ask
 import deepl
 import eleven
 import whisper
+import picture
 WIDTH = 240
 HEIGHT = 280
 HEADER_H = 50
@@ -39,6 +40,7 @@ screen.pack()
 picked_model = ""
 answer = ""
 waiting = False
+shot =  None
 picked_lang = ""
 picked_name = ""
 lang_list = []
@@ -125,9 +127,11 @@ def draw_ask():
     if where == "deepl":
         screen.create_text(16,50, text=picked_name,anchor="w", fill="#c8c2b4", font=("Segoe UI",11))
         answer_y=72
+    elif where == "picture" and answer == "ok" and shot != None:
+        screen.create_image(120,150,image=shot)
     if waiting:
         screen.create_text(120,140,text="...",fill="#f2f2f2",font=("Segoe UI", 16))
-    elif answer:
+    elif answer and not (where == "picture" and answer == "ok"):
         screen.create_text(16,answer_y, text=answer, anchor="nw", width=208, fill="#f2f2f2", font=("Segoe UI", 11))
     screen.create_line(8, HEIGHT-PAGER_H, WIDTH-8, HEIGHT-PAGER_H, fill="#c8c2b4")
     mid = WIDTH // 2
@@ -161,9 +165,9 @@ def redraw():
         line.place_forget()
         draw_langs()
         return
-    if where != "ask" and where != "deepl" and where != "talk" and where != "hear":
+    if where != "ask" and where != "deepl" and where != "talk" and where != "hear" and where != "picture":
         line.place_forget()
-    if where == "ask" or where == "deepl" or where == "talk" or where == "hear":
+    if where == "ask" or where == "deepl" or where == "talk" or where == "hear" or where == "picture":
         draw_ask()
         return
     if where == "ai":
@@ -196,15 +200,21 @@ def send_line(event=None):
     redraw()
     def done(reply):
         def paint():
-            global answer, waiting
+            global answer, waiting, shot
             answer = reply
             waiting = False
+            if where == "picture" and reply == "ok":
+                big = tk.PhotoImage(file=picture.SHOT)
+                n = max(1, big.width() // 160)
+                shot = big.subsample(n,n)
             redraw()
         root.after(0, paint)
     if where == "deepl":
         deepl.translate_later(text, picked_lang, done)
     elif where == "talk":
         eleven.speak_later(text, done)
+    elif where == "picture":   
+        picture.make_later(text,done)
     else:
         ask.ask_later(picked_model, text, done)
 line.bind("<Return>", send_line)
@@ -217,7 +227,7 @@ def on_click(event):
             where = "home"
             redraw()
             return
-    if where != "ask" and where != "deepl" and where != "talk" and where != "hear" and event.y >= HEIGHT-PAGER_H:
+    if where != "ask" and where != "deepl" and where != "talk" and where != "hear" and where != "picture" and event.y >= HEIGHT-PAGER_H:
         page = 1 - page
         picked = ""
         redraw()
@@ -256,6 +266,13 @@ def on_click(event):
             where="talk"
             redraw()
             return    
+        if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name == "perplexity":
+            answer = ""
+            waiting = False
+            line.delete(0, "end")
+            where="picture"
+            redraw()
+            return
         if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name == "whisper":
             answer = ""
             waiting = True
@@ -289,7 +306,7 @@ def on_click(event):
             line.delete(0,"end")
             redraw()
             return
-    if where == "ask" or where == "deepl" or where == "talk" or where == "hear":
+    if where == "ask" or where == "deepl" or where == "talk" or where == "hear" or where == "picture":
         if event.y >= HEIGHT-PAGER_H:
             if where == "deepl" and picked_lang != "":
                 picked_lang=""
