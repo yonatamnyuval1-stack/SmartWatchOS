@@ -6,6 +6,10 @@ import deepl
 import eleven
 import whisper
 import picture
+import services
+import ctypes
+ctypes.windll.ole32.CoInitializeEx(None, 2)
+from tkwebview2.tkwebview2 import WebView2
 WIDTH = 240
 HEIGHT = 280
 HEADER_H = 50
@@ -37,6 +41,7 @@ root.title("Home")
 root.resizable(False, False)
 screen = tk.Canvas(root, width=WIDTH, height=HEIGHT, bg="#111111", highlightthickness=0)
 screen.pack()
+browser = WebView2(root, WIDTH, HEIGHT-PAGER_H)
 picked_model = ""
 answer = ""
 waiting = False
@@ -157,6 +162,17 @@ def redraw():
     global boxes
     boxes = []
     screen.delete("all")
+    if where == "site":
+        browser.place(x=0,y=0,width=WIDTH,height=HEIGHT-PAGER_H)
+        mid = WIDTH // 2
+        ay = HEIGHT-PAGER_H // 2
+        screen.create_line(8, HEIGHT - PAGER_H, WIDTH-8, HEIGHT-PAGER_H, fill="#c8c2b4")
+        screen.create_line(
+            mid-28,ay-4,mid,ay+4,mid+28,ay-4,
+            fill="#f2f2f2", width=2,joinstyle="miter",capstyle="butt"
+        )
+        return 
+    browser.place_forget()
     if where == "hear":
         line.place_forget()
         draw_hear()
@@ -172,6 +188,9 @@ def redraw():
         return
     if where == "ai":
         boxes = ai.show_screen(screen)
+        return
+    if where == "serv":
+        boxes = services.show_screen(screen)
         return
     now = datetime.now().strftime("%H:%M")
     screen.create_text(14, 24, text=now, anchor="w", font=("Segoe UI", 18), fill="#f2f2f2")
@@ -227,7 +246,16 @@ def on_click(event):
             where = "home"
             redraw()
             return
-    if where != "ask" and where != "deepl" and where != "talk" and where != "hear" and where != "picture" and event.y >= HEIGHT-PAGER_H:
+    if where == "serv":
+        if event.y >= HEIGHT-PAGER_H:
+            where = "home"
+            redraw()
+            return
+    if where == "site" and event.y >= HEIGHT-PAGER_H:
+        where = "serv"
+        redraw()
+        return
+    if where != "ask" and where != "deepl" and where != "talk" and where != "hear" and where != "picture" and where != "serv" and event.y >= HEIGHT-PAGER_H:
         page = 1 - page
         picked = ""
         redraw()
@@ -237,6 +265,19 @@ def on_click(event):
             where = "ai"
             picked = ""
             redraw()
+            return
+        if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name == "HC serv.":
+            where = "serv"
+            picked = ""
+            redraw()
+            return
+        if where == "serv" and x1 <= event.x <= x2 and y1 <= event.y <= y2:
+            url = services.address(name)
+            if url != "":
+                site_url = url
+                where = "site"
+                browser.load_url(site_url)
+                redraw()
             return
         if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name == "deepl":
             answer=""
