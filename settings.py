@@ -4,7 +4,9 @@ import deepl
 import eleven
 import picture
 import whisper
-
+import json
+import threading
+import urllib.request
 WIDTH = 240
 HEIGHT = 280
 PAGER_H = 20
@@ -13,19 +15,20 @@ typing = ""
 page = 0
 country = ""
 clock = "24"
+outside = ""
 places = [
-    ("United States", "sunday", "mdy"),
-    ("Canada", "sunday", "mdy"),
-    ("United Kingdom", "monday", "dmy"),
-    ("France", "monday", "dmy"),
-    ("Germany", "monday", "dmy"),
-    ("Spain", "monday", "dmy"),
-    ("Italy", "monday", "dmy"),
-    ("Netherlands", "monday", "dmy"),
-    ("India", "monday", "dmy"),
-    ("Japan", "sunday", "ymd"),
-    ("Australia", "monday", "dmy"),
-    ("Israel", "sunday", "dmy"),
+    ("United States", "sunday", "mdy", 38.91, -77.04, "f"),
+    ("Canada", "sunday", "mdy",45.42, -75.70, "c"),
+    ("United Kingdom", "monday", "dmy",51.51, -0.13, "c"),
+    ("France", "monday", "dmy",48.86, 2.35, "c"),
+    ("Germany", "monday", "dmy",52.52, 13.41, "c"),
+    ("Spain", "monday", "dmy",40.42, -3.70, "c"),
+    ("Italy", "monday", "dmy",41.90, 12.50, "c"),
+    ("Netherlands", "monday", "dmy",52.37, 4.90, "c"),
+    ("India", "monday", "dmy",28.61, 77.21, "c"),
+    ("Japan", "sunday", "ymd",35.68, 139.65, "c"),
+    ("Australia", "monday", "dmy",-35.28, 149.13, "c"),
+    ("Israel", "sunday", "dmy",31.77, 35.21, "c"),
 ]
 def read_file(name):
     try:
@@ -46,6 +49,33 @@ def load():
         clock = "12"
     else:
         clock = "24"
+    weather_later()
+
+def read_weather():
+    global outside
+    found = None
+    for row in places:
+        if row[0] == country:
+            found=row
+    if found == None:
+        outside=""
+        return
+    unit = "celsius"
+    if found[5] == "f":
+        unit = "fahrenheit"
+    url = "https://api.open-meteo.com/v1/forecast?latitude=" + str(found[3]) + "&longitude=" + str(found[4]) + "&current=temperature_2m&temperature_unit=" + unit
+    try:
+        with urllib.request.urlopen(url, timeout=20) as r:
+            data = json.loads(r.read().decode())
+        number = data["current"]["temperature_2m"]
+        outside = str(int(round(number))) + "°"
+    except Exception:
+        return
+
+def weather_later():
+    def work():
+        read_weather()
+    threading.Thread(target=work,daemon=True).start()
 
 def week_start():
     for row in places:
@@ -128,6 +158,7 @@ def pick(name):
         country = name
         write("country.txt",name)
         part = "menu"
+        weather_later()
         return
 def save_typed(text):
     global part

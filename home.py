@@ -29,9 +29,9 @@ pages = [
         ("HC serv.", "serv."),
         ("3D print", "print"),
         ("settings", "settings"),
-        None,
-        None,
-        None,
+        ("soon", "soon"),
+        ("soon", "soon"),
+        ("soon", "soon"),
     ],
     [None,None,None,None,None,None,None,None,None],
 ]
@@ -82,6 +82,8 @@ def draw_icon(kind,x,y):
         screen.create_oval(cx-3, cy-3, cx+3, cy+3, outline=ink, width=2)
         for dx, dy in ((0,-15),(0,15),(-15,0),(15,0),(-11,-11),(11,-11),(-11,11),(11,11)):
             screen.create_line(cx + dx*9//15, cy + dy*9//15, cx+dx, cy+dy, fill=ink, width=4)
+    elif kind == "soon":
+        screen.create_text(cx, cy, text="...", font=("Segoe UI", 16), fill=ink)
 
 def draw_arrow():
     mid = WIDTH // 2
@@ -96,6 +98,7 @@ def draw_arrow():
             mid - 28, y+4, mid, y-4, mid+28, y+4,
             fill="#f2f2f2", width=2,joinstyle="miter",capstyle="butt"
         )
+
 def draw_langs():
     global boxes
     boxes = []
@@ -198,8 +201,18 @@ def redraw():
             line.place_forget()
         boxes = settings.show_screen(screen)
         return 
+    if where == "soon":
+        screen.create_text(120,130,text="coming soon...",fill="#f2f2f2",font=("Segoe UI",16))
+        screen.create_line(8, HEIGHT-PAGER_H,WIDTH-8,HEIGHT-PAGER_H,fill="#c8c2b4")
+        mid = WIDTH // 2
+        ay = HEIGHT-PAGER_H // 2
+        screen.create_line(
+            mid-28,ay-4,mid,ay+4,mid+28,ay-4,
+            fill="#f2f2f2",width=2,joinstyle="miter",capstyle="butt"
+        )
+        return
     screen.create_text(14, 24, text=settings.hour(datetime.now()), anchor="w", font=("Segoe UI", 18), fill="#f2f2f2")
-    screen.create_text(WIDTH - 36,24, text="31°", anchor="e", font=("Segoe UI", 14), fill="#c8c2b4")
+    screen.create_text(WIDTH - 36,24, text=settings.outside, anchor="e", font=("Segoe UI", 14), fill="#c8c2b4")
     for i, item in enumerate(pages[page]):
         if item is None:
             continue
@@ -285,6 +298,11 @@ def on_click(event):
             where = "home"
         redraw()
         return
+    if where == "soon" and event.y >= HEIGHT-PAGER_H:
+        where = "home"
+        picked = ""
+        redraw()
+        return
     if where != "ask" and where != "deepl" and where != "talk" and where != "hear" and where != "picture" and where != "serv" and event.y >= HEIGHT-PAGER_H:
         page = 1 - page
         picked = ""
@@ -330,6 +348,11 @@ def on_click(event):
             settings.part = "menu"
             settings.load()
             picked = ""
+            redraw()
+            return
+        if x1 <= event.x <= x2 and y1 <= event.y <= y2 and (name == "dash" or name == "soon"):
+            where = "soon"
+            picked=""
             redraw()
             return
         if where == "set" and x1 <= event.x <= x2 and y1 <= event.y <= y2:
