@@ -8,6 +8,7 @@ import whisper
 import picture
 import services
 import print3d
+import hc
 import ctypes
 ctypes.windll.ole32.CoInitializeEx(None, 2)
 from tkwebview2.tkwebview2 import WebView2
@@ -196,6 +197,9 @@ def redraw():
     if where == "print":
         boxes = print3d.show_screen(screen)
         return
+    if where == "hc":
+        boxes = hc.show_screen(screen)
+        return
     now = datetime.now().strftime("%H:%M")
     screen.create_text(14, 24, text=now, anchor="w", font=("Segoe UI", 18), fill="#f2f2f2")
     screen.create_text(WIDTH - 36,24, text="31°", anchor="e", font=("Segoe UI", 14), fill="#c8c2b4")
@@ -259,6 +263,10 @@ def on_click(event):
                 where="home"
             redraw()
             return
+    if where == "hc" and event.y >= HEIGHT-PAGER_H:
+        where = "home"
+        redraw()
+        return
     if where == "site" and event.y >= HEIGHT-PAGER_H:
         where = "serv"
         redraw()
@@ -295,6 +303,21 @@ def on_click(event):
             where = "print"
             picked = ""
             redraw()
+            return
+        if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name == "HC":
+            where = "hc"
+            picked = ""
+            hc.today = "..."
+            hc.project = ""
+            hc.language = ""
+            redraw()
+            def done():
+                def paint():
+                    if where != "hc":
+                        return
+                    redraw()
+                root.after(0,paint)
+            hc.load_later(done)
             return
         if where == "print" and print3d.picked == "" and x1 <= event.x <= x2 and y1 <= event.y <= y2:
             print3d.picked = name
