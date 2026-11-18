@@ -2,6 +2,7 @@ import json
 import threading
 import urllib.request
 import urllib.error
+import settings
 from datetime import datetime, timedelta
 WIDTH = 240
 HEIGHT = 280
@@ -53,9 +54,12 @@ def load():
         projects = []
         return
     now = datetime.now()
-    monday = now - timedelta(days=now.weekday())
     end = now.strftime("%Y-%m-%d")
-    start = monday.strftime("%Y-%m-%d")
+    if settings.week_start() == "sunday":
+        back = (now.weekday()+1)%7
+    else:
+        back = now.weekday()
+    start = (now-timedelta(days=back)).strftime("%Y-%m-%d")
     url = "https://hackatime.hackclub.com/api/hackatime/v1/users/current/summaries?start=" + start + "&end=" + end
     req = urllib.request.Request(url, headers={
         "Authorization": "Bearer " + key,

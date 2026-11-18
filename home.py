@@ -9,6 +9,7 @@ import picture
 import services
 import print3d
 import hc
+import settings
 import ctypes
 ctypes.windll.ole32.CoInitializeEx(None, 2)
 from tkwebview2.tkwebview2 import WebView2
@@ -190,8 +191,14 @@ def redraw():
     if where == "hc":
         boxes = hc.show_screen(screen)
         return
-    now = datetime.now().strftime("%H:%M")
-    screen.create_text(14, 24, text=now, anchor="w", font=("Segoe UI", 18), fill="#f2f2f2")
+    if where == "set":
+        if settings.part == "type":
+            line.place(x=12,y=72,width=216,height=28)
+        else:
+            line.place_forget()
+        boxes = settings.show_screen(screen)
+        return 
+    screen.create_text(14, 24, text=settings.hour(datetime.now()), anchor="w", font=("Segoe UI", 18), fill="#f2f2f2")
     screen.create_text(WIDTH - 36,24, text="31°", anchor="e", font=("Segoe UI", 14), fill="#c8c2b4")
     for i, item in enumerate(pages[page]):
         if item is None:
@@ -269,6 +276,15 @@ def on_click(event):
             where = "home"
         redraw()
         return
+    if where == "set" and event.y >= HEIGHT-PAGER_H:
+        if settings.part == "type":
+            settings.save_typed(line.get().strip())
+            line.delete(0,"end")
+            line.place_forget()
+        elif settings.back() == "home":
+            where = "home"
+        redraw()
+        return
     if where != "ask" and where != "deepl" and where != "talk" and where != "hear" and where != "picture" and where != "serv" and event.y >= HEIGHT-PAGER_H:
         page = 1 - page
         picked = ""
@@ -308,6 +324,19 @@ def on_click(event):
                     redraw()
                 root.after(0,paint)
             hc.load_later(done)
+            return
+        if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name == "settings":
+            where = "set"
+            settings.part = "menu"
+            settings.load()
+            picked = ""
+            redraw()
+            return
+        if where == "set" and x1 <= event.x <= x2 and y1 <= event.y <= y2:
+            settings.pick(name)
+            if settings.part == "type":
+                line.delete(0,"end")
+            redraw()
             return
         if where == "print" and print3d.picked == "" and x1 <= event.x <= x2 and y1 <= event.y <= y2:
             print3d.picked = name

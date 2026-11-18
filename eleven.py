@@ -7,13 +7,21 @@ import urllib.error
 with open("eleven_key.txt",encoding="utf-8") as f:
     KEY= f.read().strip()
 VOICE = "21m00Tcm4TlvDq8ikWAM"
-URL = "https://api.elevenlabs.io/v1/text-to-speech/" + VOICE + "?output_format=pcm_22050"
+try:
+    with open("voice.txt",encoding="utf-8") as f:
+        found = f.read().strip()
+    if found != "":
+        VOICE=found
+except Exception:
+    pass
+
 def speak(text):
     body = json.dumps({
         "text":text, 
         "model_id":"eleven_flash_v2_5",
     }).encode()
-    req = urllib.request.Request(URL, data=body, headers={
+    url = "https://api.elevenlabs.io/v1/text-to-speech/" + VOICE + "?output_format=pcm_22050"
+    req = urllib.request.Request(url, data=body, headers={
         "Content-Type": "application/json",
         "xi-api-key": KEY,
     })
