@@ -9,13 +9,23 @@ items = [
     ("YSWS", "https://hackclub.com/programs"),
     ("HCAI", "https://ai.hackclub.com"),
     ("Nest", "https://nest.hackclub.com"),
-    None,
-    None,
-    None,
+    ("Scrapbook", "https://scrapbook.hackclub.com"),
+    ("Jams", "https://jams.hackclub.com"),
+    ("Workshops", "https://workshops.hackclub.com"),
+    ("HCB", "https://hcb.hackclub.com"),
+    ("Spaces", "https://spaces.hackclub.com"),
+    ("CDN", "https://cdn.hackclub.com"),
+    ("IP", "https://ip.hackclub.com"),
+    ("Lapse", "https://lapse.hackclub.com"),
+    ("Mail", "https://mail.hackclub.com"),
+    ("Auth", "https://auth.hackclub.com"),
+    ("Git", "https://git.hackclub.app"),
+    ("VERT", "https://convert.hackclub.com"),
     None,
     None,
     None,
 ]
+page = 0
 logos = {}
 
 def load_logos():
@@ -39,13 +49,15 @@ def show_screen(screen):
     load_logos()
     found = []
     top = 22
+    start = page *9
+
     for i in range(9):
         row = i // 3
         col = i % 3
         x = GRID_LEFT + col * (TILE+GAP)
         y = top + row * (TILE+GAP)
         screen.create_rectangle(x,y,x+TILE,y+TILE,outline = "#f2f2f2", width = 2)
-        item = items[i]
+        item = items[start+i]
         if item is None:
             continue
         name = item[0]

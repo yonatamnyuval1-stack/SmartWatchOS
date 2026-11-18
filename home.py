@@ -248,7 +248,11 @@ def on_click(event):
             return
     if where == "serv":
         if event.y >= HEIGHT-PAGER_H:
-            where = "home"
+            if services.page == 0:
+                services.page = 1
+            else:
+                services.page=0
+                where="home"
             redraw()
             return
     if where == "site" and event.y >= HEIGHT-PAGER_H:
@@ -267,6 +271,7 @@ def on_click(event):
             redraw()
             return
         if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name == "HC serv.":
+            services.page = 0
             where = "serv"
             picked = ""
             redraw()
