@@ -30,6 +30,10 @@ It will not even open without `key.txt`, `deepl_key.txt` and `eleven_key.txt` in
 ![services](screenshots/services.png)
 ![chat](screenshots/chat.png)
 
+## demo
+
+https://yonatamnyuval1-stack.github.io/SmartWatchOS/demo.html
+
 ## author
 
 Jonathan Jacob
