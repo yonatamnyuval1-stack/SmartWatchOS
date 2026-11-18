@@ -55,6 +55,8 @@ lang_page = 0
 line= tk.Entry(
     root, bg="#333333", fg="#f2f2f2", insertbackground="#f2f2f2",
     relief="solid", font=("Segoe UI", 11))
+hackatime_logo = tk.PhotoImage(file="logos/hackatime.png")
+hackclub_logo = tk.PhotoImage(file="logos/hackclub.png")
 
 def draw_icon(kind,x,y):
     cx = x + TILE//2
@@ -67,30 +69,18 @@ def draw_icon(kind,x,y):
     elif kind == "ai":
         screen.create_text(cx, cy, text="AI", font=("segoe UI", 14, "bold"), fill=ink)
     elif kind == "hc":
-        screen.create_text(cx, cy, text="HC", font=("segoe UI", 14, "bold"), fill=ink)
+        screen.create_image(cx, cy, image=hackatime_logo)
     elif kind == "serv.":
-        s = 10
-        g = 6
-        left = cx - s - g//2
-        top = cy - s - g//2
-        for r in range(2):
-            for c in range(2):
-                a = left + c*(s+g)
-                b = top + r*(s+g)
-                screen.create_rectangle(a, b, a+s, b+s, outline=ink, width=2)
+        screen.create_image(cx, cy, image=hackclub_logo)
     elif kind == "print":
-        screen.create_polygon(
-            cx, y + 16,
-            x + TILE - 16, cy,
-            cx, y + TILE - 16,
-            x + 16, cy,
-            outline=ink, fill="", width=2
-        )
+        screen.create_rectangle(cx-16, cy-10, cx+16, cy+6, outline=ink, width=2)
+        screen.create_rectangle(cx-10, cy+6, cx+10, cy+16, outline=ink, width=2)
+        screen.create_oval(cx-3, cy-4, cx+3, cy+2, outline=ink, width=2)
     elif kind == "settings":
-        screen.create_oval(cx-8, cy-8, cx+8,cy+8, outline=ink, width=2)
-        screen.create_oval(cx-3, cy-3, cx+3,cy+3, outline=ink, width=2)
-        for dx, dy in ((0,-14),(0,14),(-14,0),(14,0),(-10,-10),(10,-10),(-10,10),(10,10)):
-            screen.create_line(cx + dx // 2, cy+dy // 2, cx+dx, cy+dy, fill=ink,width=2)
+        screen.create_oval(cx-9, cy-9, cx+9, cy+9, outline=ink, width=2)
+        screen.create_oval(cx-3, cy-3, cx+3, cy+3, outline=ink, width=2)
+        for dx, dy in ((0,-15),(0,15),(-15,0),(15,0),(-11,-11),(11,-11),(-11,11),(11,11)):
+            screen.create_line(cx + dx*9//15, cy + dy*9//15, cx+dx, cy+dy, fill=ink, width=4)
 
 def draw_arrow():
     mid = WIDTH // 2
@@ -308,8 +298,8 @@ def on_click(event):
             where = "hc"
             picked = ""
             hc.today = "..."
-            hc.project = ""
-            hc.language = ""
+            hc.week = "..."
+            hc.projects = []
             redraw()
             def done():
                 def paint():

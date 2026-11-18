@@ -1,15 +1,14 @@
 import json
-import base64
 import threading
 import urllib.request
 import urllib.error
-from datetime import datetime
+from datetime import datetime, timedelta
 WIDTH = 240
 HEIGHT = 280
 PAGER_H = 20
 today = "..."
-project = ""
-language = ""
+week = "..."
+projects = []
 
 def clock(hours,minutes):
     if minutes < 10:
@@ -18,52 +17,80 @@ def clock(hours,minutes):
         minutes = str(minutes)
     return str(hours) + ":" + minutes
 
-def biggest(rows):
-    best = None
-    for row in rows:
-        if best == None or row["total_seconds"] > best["total_seconds"]:
-            best = row
-    if best == None:
-        return ""
-    return best["name"]
+def short(seconds):
+    minutes = int(seconds) // 60
+    hours = minutes // 60
+    minutes = minutes % 60
+    if hours == 0:
+        return str(minutes) + "m"
+    return str(hours) + "h " + str(minutes) + "m"
+
+def cut(name):
+    if len(name) > 11:
+        return name[:10] + "."
+    return name
+
+def by_time(rows):
+    rows = list(rows)
+    ordered = []
+    while len(rows) > 0:
+        best = rows[0]
+        for row in rows:
+            if row["total_seconds"] > best["total_seconds"]:
+                best = row
+        ordered.append(best)
+        rows.remove(best)
+    return ordered
 
 def load():
-    global today,project,language
+    global today,week,projects
     try:
         with open("hackatime_key.txt",encoding="utf-8") as f:
             key = f.read().strip()
     except Exception:
         today = "no key"
-        project = ""
-        language = ""
+        week = ""
+        projects = []
         return
-    day = datetime.now().strftime("%Y-%m-%d")
-    url = "https://hackatime.hackclub.com/api/v1/users/current/summaries?start=" + day + "&end=" + day
-    token = base64.b64encode((key + ":").encode()).decode()
+    now = datetime.now()
+    monday = now - timedelta(days=now.weekday())
+    end = now.strftime("%Y-%m-%d")
+    start = monday.strftime("%Y-%m-%d")
+    url = "https://hackatime.hackclub.com/api/hackatime/v1/users/current/summaries?start=" + start + "&end=" + end
     req = urllib.request.Request(url, headers={
-        "Authorization": "Basic "+ token,
+        "Authorization": "Bearer " + key,
     })
     try:
         with urllib.request.urlopen(req, timeout=20) as r:
             data = json.loads(r.read().decode())
-        one = data["data"][0]
-        grand = one["grand_total"]
-        today = clock(grand["hours"],grand["minutes"])
-        project = biggest(one["projects"])
-        language = biggest(one["languages"])
+        grand = data["cumulative_total"]
+        week = clock(grand["hours"],grand["minutes"])
+        today = "0:00"
+        found = None
+        for day in data["data"]:
+            if day["range"]["date"] == end:
+                found = day
+        projects = []
+        if found != None:
+            one = found["grand_total"]
+            today = clock(one["hours"],one["minutes"])
+            for row in by_time(found["projects"]):
+                if row["total_seconds"] <= 0:
+                    continue
+                projects.append(row)
     except urllib.error.HTTPError as e:
         if e.code == 401:
-            project= ""
-            language=""
+            week = ""
+            projects= []
             today = "bad key"
         else:
-            project = ""
-            language = ""
+            week = ""
+            projects = []
             today = "no hours"
     except Exception:
         today = "no internet"
-        project = ""
-        language = ""
+        week = ""
+        projects = []
 
 def load_later(done):
     def work():
@@ -72,14 +99,26 @@ def load_later(done):
     threading.Thread(target=work,daemon=True).start()
 
 def show_screen(screen):
-    screen.create_text(120,48,text="today",fill="#c8c2b4",font=("Segoe UI",12))
-    screen.create_text(120,108,text=today,fill="#f2f2f2",font=("Segoe UI",32))
-    screen.create_line(56,152,184,152,fill="#333333")
-    if project != "":
-        screen.create_text(120,182,text=project,width=200, justify="center",fill="#f2f2f2",font=("Segoe UI",14))
-    if language != "":
-        screen.create_text(120,214,text=language,fill="#c8c2b4",font=("Segoe UI",12))
-    screen.create_line(8, HEIGHT-PAGER_H,WIDTH-8,HEIGHT-PAGER_H,fill="#c8c2b4")
+    screen.create_text(16,36,text="today",anchor="w",fill="#c8c2b4",font=("Segoe UI", 13))
+    screen.create_text(224,36,text=today,anchor="e",fill="#f2f2f2",font=("Segoe UI",16))
+    screen.create_text(16,66,text="this week",anchor="w",fill="#c8c2b4",font=("Segoe UI",13))
+    screen.create_text(224,66,text=week,anchor="e",fill="#f2f2f2",font=("Segoe UI",16))
+    screen.create_line(16, 84, 224, 84, fill="#333333")
+    y = 108
+    most = 0
+    if len(projects) > 0:
+        most = projects[0]["total_seconds"]
+    for row in projects[:5]:
+        screen.create_text(14, y, text=cut(row["name"]), anchor="w", fill="#f2f2f2", font=("Segoe UI", 11))
+        wide = 4
+        if most > 0:
+            wide = int(48*row["total_seconds"]/ most)
+        if wide < 4:
+            wide = 4
+        screen.create_rectangle(112, y - 5, 112 + wide, y + 5, fill="#7ec8e3", outline="")
+        screen.create_text(226, y, text=short(row["total_seconds"]), anchor="e", fill="#c8c2b4", font=("Segoe UI", 11))
+        y = y+30
+
     mid = WIDTH // 2
     ay = HEIGHT - PAGER_H // 2
     screen.create_line(
