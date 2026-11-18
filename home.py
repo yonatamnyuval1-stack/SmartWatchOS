@@ -7,6 +7,7 @@ import eleven
 import whisper
 import picture
 import services
+import print3d
 import ctypes
 ctypes.windll.ole32.CoInitializeEx(None, 2)
 from tkwebview2.tkwebview2 import WebView2
@@ -192,6 +193,9 @@ def redraw():
     if where == "serv":
         boxes = services.show_screen(screen)
         return
+    if where == "print":
+        boxes = print3d.show_screen(screen)
+        return
     now = datetime.now().strftime("%H:%M")
     screen.create_text(14, 24, text=now, anchor="w", font=("Segoe UI", 18), fill="#f2f2f2")
     screen.create_text(WIDTH - 36,24, text="31°", anchor="e", font=("Segoe UI", 14), fill="#c8c2b4")
@@ -259,6 +263,14 @@ def on_click(event):
         where = "serv"
         redraw()
         return
+    if where == "print" and event.y >= HEIGHT-PAGER_H:
+        if print3d.picked != "":
+            print3d.picked = ""
+        else:
+            print3d.on_screen = False
+            where = "home"
+        redraw()
+        return
     if where != "ask" and where != "deepl" and where != "talk" and where != "hear" and where != "picture" and where != "serv" and event.y >= HEIGHT-PAGER_H:
         page = 1 - page
         picked = ""
@@ -274,6 +286,18 @@ def on_click(event):
             services.page = 0
             where = "serv"
             picked = ""
+            redraw()
+            return
+        if x1 <= event.x <= x2 and y1 <= event.y <= y2 and name == "3D print":
+            print3d.picked = ""
+            print3d.on_screen = True
+            print3d.watch()
+            where = "print"
+            picked = ""
+            redraw()
+            return
+        if where == "print" and print3d.picked == "" and x1 <= event.x <= x2 and y1 <= event.y <= y2:
+            print3d.picked = name
             redraw()
             return
         if where == "serv" and x1 <= event.x <= x2 and y1 <= event.y <= y2:
